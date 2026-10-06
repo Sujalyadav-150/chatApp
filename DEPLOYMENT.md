@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ChatApp Deployment Checklist
 
 This project is prepared for a single Render web service plus an hourly Render cron job.
@@ -78,3 +79,10 @@ Open the Render web-service URL and test:
 7. Refresh and verify the history remains available.
 8. Check `/api/health`.
 9. Check the Render cron logs for `[archive-once]`.
+=======
+# ChatApp deployment
+
+Production setup: Render web service for the Node.js + Socket.IO backend, with the same service serving the static frontend.
+
+Required environment variables are listed in backend/.env.example. Never commit backend/.env.
+>>>>>>> 15183da817716a4a2cae37401959883dd2135b60

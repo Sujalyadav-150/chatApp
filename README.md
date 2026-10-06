@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ChatApp - Mock Interview Practice
 
 This is a learning project based on the ChatApp requirements.
@@ -167,3 +168,6 @@ git push origin main
 ```
 
 Do not commit `backend/.env`, AWS keys, MongoDB passwords, or other secrets.
+=======
+# chatApp
+>>>>>>> 15183da817716a4a2cae37401959883dd2135b60

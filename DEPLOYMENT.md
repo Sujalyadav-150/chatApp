@@ -80,7 +80,7 @@ serverless function: that cannot keep this app's Socket.IO connections alive.
 
 ## 6. Verify after deployment
 
-Open the Render web-service URL and test:
+Open the Vercel production URL after the Render web service is active, then test:
 
 1. Signup/login with two users.
 2. Start personal chat using the second user's real email.

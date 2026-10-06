@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: chatapp
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: AWS_S3_BUCKET
+        sync: false
+      - key: CLIENT_ORIGIN
+        value: "*"
+      - key: ENABLE_INTERNAL_ARCHIVE_CRON
+        value: "false"
+      - key: ARCHIVE_AFTER_HOURS
+        value: "24"
+      - key: ARCHIVE_CRON
+        value: "0 * * * *"
+      - key: MAX_UPLOAD_BYTES
+        value: "26214400"
+
+  - type: cron
+    name: chatapp-archive
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci
+    schedule: "0 * * * *"
+    startCommand: npm run archive
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: ARCHIVE_AFTER_HOURS
+        value: "24"

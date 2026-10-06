@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets  (NEVER commit your API keys!)
+.env
+.env.local
+.env.*.local
+
+# Local MongoDB data folder
+.mongo-data/
+
+# Logs
+*.log
+
+# Scratch / helper output files
+__*.txt
+_*.txt
+
+# OS files
+Thumbs.db
+.DS_Store

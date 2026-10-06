@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>ChatApp - Chat</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<div class="chat">
+  <header>
+    <strong id="me"></strong>
+    <div class="header-actions">
+      <label class="tone-label" for="tone">Tone</label>
+      <select id="tone" title="AI suggestion tone">
+        <option value="casual">Casual</option>
+        <option value="formal">Formal</option>
+        <option value="playful">Playful</option>
+      </select>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button id="tabPersonal" class="tab active" onclick="switchTab('personal')">Personal Chat</button>
+    <button id="tabGroup" class="tab" onclick="switchTab('group')">Group Chat</button>
+  </nav>
+
+  <!-- Personal chat setup: the email is validated against the backend -->
+  <section id="personalPanel" class="setup">
+    <div class="row">
+      <input id="receiver" placeholder="Other user's email">
+      <button onclick="startChat()">Start Chat</button>
+    </div>
+    <p id="personalMsg" class="hint"></p>
+  </section>
+
+  <!-- Group chat setup: pick a name and members, or open an existing group -->
+  <section id="groupPanel" class="setup hidden">
+    <div class="row">
+      <input id="groupName" placeholder="Group name">
+      <button onclick="createGroup()">Create Group</button>
+    </div>
+    <div class="row">
+      <select id="memberSelect" multiple size="4" title="Select members (hold Ctrl/Cmd to pick more)"></select>
+    </div>
+    <p id="groupMsg" class="hint"></p>
+    <div class="row">
+      <select id="groupSelect" onchange="openGroup(this.value)">
+        <option value="">My groups...</option>
+      </select>
+    </div>
+  </section>
+
+  <div id="roomBar" class="room-bar hidden"></div>
+
+  <main id="messages"></main>
+
+  <div id="quickReplies" class="chip-row quick-replies" aria-label="AI suggested replies"></div>
+  <div id="suggestions" class="chip-row suggestions" aria-label="AI typing suggestions"></div>
+
+  <div class="upload-row">
+    <input id="fileInput" type="file"
+           accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
+    <button type="button" id="uploadBtn" onclick="uploadMedia()">Send File</button>
+    <span id="uploadStatus" class="hint"></span>
+  </div>
+
+  <form id="chatForm" class="message-composer">
+    <button type="button" id="emojiBtn" class="composer-icon emoji-btn" title="Emoji" aria-label="Emoji">😊</button>
+    <div class="message-input-wrap">
+      <input id="text" placeholder="Type a message..." autocomplete="off">
+      <div id="emojiPicker" class="emoji-picker hidden" aria-label="Emoji picker"></div>
+    </div>
+    <button type="button" id="micBtn" class="composer-icon mic-btn" title="Record voice message" aria-label="Record voice message">🎤</button>
+    <button type="submit" class="send-btn">➤</button>
+  </form>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/chat.js"></script>
+</body>
+</html>

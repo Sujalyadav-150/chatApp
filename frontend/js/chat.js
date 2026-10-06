@@ -10,7 +10,7 @@ if (!token || !currentUser) {
 
 document.getElementById("me").textContent = `Logged in as ${currentUser.name}`;
 
-const socket = io(CHAT_API_BASE, { auth: { token } });
+const socket = io(CHAT_SOCKET_BASE, { auth: { token } });
 
 const API = {
   users: `${CHAT_API_BASE}/api/users`,

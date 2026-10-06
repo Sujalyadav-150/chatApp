@@ -19,6 +19,7 @@ const { startArchiveJob } = require("./jobs/archiveMessages");
 
 const app = express();
 const server = http.createServer(app);
+const isVercel = Boolean(process.env.VERCEL);
 
 // Allowed browser origin(s). "*" by default for local dev. In production set
 // CLIENT_ORIGIN (comma separated) so CORS is restricted to your real domain.
@@ -29,12 +30,22 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || "*")
 
 const corsOrigin = allowedOrigins.includes("*") ? "*" : allowedOrigins;
 
-const io = new Server(server, {
-  cors: { origin: corsOrigin, methods: ["GET", "POST"] }
-});
+const io = isVercel
+  ? null
+  : new Server(server, {
+      cors: { origin: corsOrigin, methods: ["GET", "POST"] }
+    });
 
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Expose the Socket.IO instance to controllers (the upload controller uses it
 // to broadcast a media message to the correct room after a successful upload).
@@ -62,25 +73,31 @@ app.use((error, req, res, next) => {
   res.status(status).json({ success: false, message });
 });
 
-io.use(socketAuth);
-registerSocketHandlers(io);
+if (io) {
+  io.use(socketAuth);
+  registerSocketHandlers(io);
+}
 
-const PORT = process.env.PORT || 3000;
+if (isVercel) {
+  module.exports = app;
+} else {
+  const PORT = process.env.PORT || 3000;
 
-connectDB()
-  .then(() => {
-    server.listen(PORT, () => {
-      console.log(`Server running at http://localhost:${PORT}`);
+  connectDB()
+    .then(() => {
+      server.listen(PORT, () => {
+        console.log(`Server running at http://localhost:${PORT}`);
+      });
+      // In production Render runs the archive as a separate cron service.
+      // Keep the in-process scheduler for local development unless explicitly disabled.
+      if (process.env.ENABLE_INTERNAL_ARCHIVE_CRON !== "false") {
+        startArchiveJob();
+      } else {
+        console.log("[archive] internal scheduler disabled; use external cron service");
+      }
+    })
+    .catch((error) => {
+      console.error("Database connection failed:", error.message);
+      process.exit(1);
     });
-    // In production Render runs the archive as a separate cron service.
-    // Keep the in-process scheduler for local development unless explicitly disabled.
-    if (process.env.ENABLE_INTERNAL_ARCHIVE_CRON !== "false") {
-      startArchiveJob();
-    } else {
-      console.log("[archive] internal scheduler disabled; use external cron service");
-    }
-  })
-  .catch((error) => {
-    console.error("Database connection failed:", error.message);
-    process.exit(1);
-  });
+}

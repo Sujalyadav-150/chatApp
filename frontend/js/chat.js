@@ -10,14 +10,14 @@ if (!token || !currentUser) {
 
 document.getElementById("me").textContent = `Logged in as ${currentUser.name}`;
 
-const socket = io("/", { auth: { token } });
+const socket = io(CHAT_API_BASE, { auth: { token } });
 
 const API = {
-  users: "/api/users",
-  messages: "/api/messages",
-  groups: "/api/groups",
-  upload: "/api/upload",
-  ai: "/api/ai"
+  users: `${CHAT_API_BASE}/api/users`,
+  messages: `${CHAT_API_BASE}/api/messages`,
+  groups: `${CHAT_API_BASE}/api/groups`,
+  upload: `${CHAT_API_BASE}/api/upload`,
+  ai: `${CHAT_API_BASE}/api/ai`
 };
 
 const textInput = document.getElementById("text");

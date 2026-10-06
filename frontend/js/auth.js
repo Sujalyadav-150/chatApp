@@ -1,4 +1,4 @@
-const API = "/api/auth";
+const API = `${CHAT_API_BASE}/api/auth`;
 
 async function signup() {
   const body = {

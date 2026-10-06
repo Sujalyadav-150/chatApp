@@ -20,7 +20,7 @@ services:
       - key: AWS_S3_BUCKET
         sync: false
       - key: CLIENT_ORIGIN
-        value: "*"
+        value: https://chat-app-phi-brown-66.vercel.app,http://localhost:3000,http://127.0.0.1:3000
       - key: ENABLE_INTERNAL_ARCHIVE_CRON
         value: "false"
       - key: ARCHIVE_AFTER_HOURS

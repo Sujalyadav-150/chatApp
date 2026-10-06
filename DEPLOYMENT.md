@@ -1,13 +1,13 @@
-<<<<<<< HEAD
-# ChatApp Deployment Checklist
+# ChatApp Deployment
 
-This project is prepared for a single Render web service plus an hourly Render cron job.
-The same web service serves the frontend and keeps the Socket.IO connection alive.
+Vercel serves the static frontend. The persistent Render web service hosts the
+Express API, MongoDB connection, and Socket.IO server. Vercel Functions do not
+host this application's long-lived Socket.IO server.
 
 ## 1. MongoDB Atlas
 
-Create a MongoDB Atlas database and copy the connection string.
-Use it as `MONGO_URI` in the Render web service and cron job.
+Create a MongoDB Atlas database and set its connection string as `MONGO_URI` in
+the Render web service and cron job.
 
 ## 2. AWS S3
 
@@ -38,7 +38,7 @@ or configure manually:
 - Start command: `npm start`
 - Health check: `/api/health`
 
-Set:
+Set the required values (and optional integrations) in the Render web service:
 
 ```text
 MONGO_URI=<MongoDB Atlas connection string>
@@ -47,7 +47,7 @@ AWS_ACCESS_KEY_ID=<IAM access key>
 AWS_SECRET_ACCESS_KEY=<IAM secret>
 AWS_REGION=ap-south-1
 AWS_S3_BUCKET=<bucket name>
-CLIENT_ORIGIN=*
+CLIENT_ORIGIN=https://chat-app-phi-brown-66.vercel.app
 ENABLE_INTERNAL_ARCHIVE_CRON=false
 ARCHIVE_AFTER_HOURS=24
 MAX_UPLOAD_BYTES=26214400
@@ -66,7 +66,19 @@ npm run archive
 It moves messages older than 24 hours into `ArchivedChat` and then deletes the
 successfully archived messages from `Message`.
 
-## 5. Verify after deployment
+The `CLIENT_ORIGIN` value may be a comma-separated list of allowed origins. The
+frontend selects `http://localhost:3000` for local development and
+`https://chatapp.onrender.com` as its production API and Socket.IO server.
+
+## 5. Vercel frontend
+
+Connect the GitHub repository and deploy the `main` branch. Keep the Root
+Directory at the repository root, leave build and install commands empty, and
+set the Output Directory to `frontend`. `vercel.json` applies this static
+configuration as well. Do not configure the frontend directory as a Node
+serverless function: that cannot keep this app's Socket.IO connections alive.
+
+## 6. Verify after deployment
 
 Open the Render web-service URL and test:
 
@@ -77,12 +89,8 @@ Open the Render web-service URL and test:
 5. Send group messages.
 6. Upload an image, video, PDF and document.
 7. Refresh and verify the history remains available.
-8. Check `/api/health`.
+8. Check `https://chatapp.onrender.com/api/health`.
 9. Check the Render cron logs for `[archive-once]`.
-=======
-# ChatApp deployment
 
-Production setup: Render web service for the Node.js + Socket.IO backend, with the same service serving the static frontend.
-
-Required environment variables are listed in backend/.env.example. Never commit backend/.env.
->>>>>>> 15183da817716a4a2cae37401959883dd2135b60
+Required environment variables are listed in `backend/.env.example`. Never
+commit `backend/.env`.

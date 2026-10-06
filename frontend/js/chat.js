@@ -398,10 +398,12 @@ function openGroup(groupId) {
 
 function joinGroup(groupId) {
   currentGroupId = groupId;
+  currentRoom = `group_${groupId}`;
   receiverUser = null;
   switchTab("group");
   socket.emit("join_group", { groupId });
   resetAiState();
+  loadMessages();
 }
 
 // --- AI: tone ---

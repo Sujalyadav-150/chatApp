@@ -1,6 +1,8 @@
 const Message = require("../models/Message");
 const Group = require("../models/Group");
+const User = require("../models/User");
 const { createRoomId } = require("../utils/room");
+const { toPublicMessage } = require("../utils/message");
 
 // Check that the logged-in user is allowed to read/write this room.
 // Prevents a client from reading an arbitrary room by guessing its id.
@@ -48,4 +50,65 @@ const getMessages = async (req, res) => {
   }
 };
 
-module.exports = { getMessages, canAccessRoom };
+const sendMessage = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const text = String(req.body.text || "").trim();
+    if (!text) {
+      return res.status(400).json({ success: false, message: "Message cannot be empty" });
+    }
+
+    let receiverId = null;
+    let groupId = null;
+
+    if (roomId.startsWith("group_")) {
+      const group = await Group.findOne({ roomId }).select("_id members");
+      if (!group) {
+        return res.status(404).json({ success: false, message: "Group not found" });
+      }
+
+      const isMember = group.members.some((member) => String(member) === String(req.user.id));
+      if (!isMember) {
+        return res.status(403).json({ success: false, message: "You are not a member of this group" });
+      }
+      groupId = group._id;
+    } else {
+      const receiverEmail = String(req.body.receiverEmail || "").trim().toLowerCase();
+      if (!receiverEmail) {
+        return res.status(400).json({ success: false, message: "receiverEmail is required" });
+      }
+
+      const receiver = await User.findOne({ email: receiverEmail }).select("_id email");
+      if (!receiver) {
+        return res.status(404).json({ success: false, message: "Receiver does not exist" });
+      }
+      if (String(receiver._id) === String(req.user.id)) {
+        return res.status(400).json({ success: false, message: "You cannot message yourself" });
+      }
+
+      if (createRoomId(req.user.email, receiver.email) !== roomId.toLowerCase()) {
+        return res.status(403).json({ success: false, message: "You do not have access to this room" });
+      }
+      receiverId = receiver._id;
+    }
+
+    const message = await Message.create({
+      roomId,
+      senderId: req.user.id,
+      receiverId,
+      groupId,
+      messageType: "text",
+      text
+    });
+    const populated = await message.populate("senderId", "name email");
+    const payload = toPublicMessage(populated);
+    const io = req.app.get("io");
+    if (io) io.to(roomId).emit("new_message", payload);
+
+    res.status(201).json({ success: true, message: payload });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { getMessages, sendMessage, canAccessRoom };

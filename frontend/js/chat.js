@@ -126,6 +126,22 @@ async function loadMessages() {
   scrollToBottom();
 }
 
+async function pollMessages() {
+  const roomId = currentRoom;
+  if (!roomId) return;
+
+  try {
+    const res = await fetch(`${API.messages}/${encodeURIComponent(roomId)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok || roomId !== currentRoom) return;
+
+    const data = await res.json();
+    (data.messages || []).forEach(addMessage);
+  } catch {
+  }
+}
+
 function scrollToBottom() {
   messagesBox.scrollTop = messagesBox.scrollHeight;
 }
@@ -209,24 +225,37 @@ function addMediaLink(container, message, label) {
   container.appendChild(a);
 }
 
-function sendMessage() {
+async function sendMessage() {
   const value = textInput.value.trim();
   if (!value) return;
 
-  if (mode === "group") {
-    if (!currentGroupId) return;
-    socket.emit("group_message", { groupId: currentGroupId, text: value });
-  } else {
-    if (!receiverUser) return;
-    socket.emit("new_message", {
-      roomId: currentRoom,
-      receiverEmail: receiverUser,
-      text: value
-    });
-  }
+  if (!currentRoom || (mode === "group" && !currentGroupId) || (mode === "personal" && !receiverUser)) return;
 
-  textInput.value = "";
-  resetAiState();
+  const roomId = currentRoom;
+  const body = mode === "group"
+    ? { groupId: currentGroupId, text: value }
+    : { receiverEmail: receiverUser, text: value };
+  const messageElement = document.getElementById(mode === "group" ? "groupMsg" : "personalMsg");
+
+  try {
+    const res = await fetch(`${API.messages}/${encodeURIComponent(roomId)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Message could not be sent");
+
+    if (roomId === currentRoom) addMessage(data.message);
+    textInput.value = "";
+    if (messageElement) messageElement.textContent = "";
+    resetAiState();
+  } catch (error) {
+    if (messageElement) messageElement.textContent = error.message;
+  }
 }
 
 // --- media sharing (uploaded to AWS S3 through the backend) ---
@@ -570,6 +599,8 @@ socket.on("chat_error", (error) => {
   if (el) el.textContent = error.message;
   else alert(error.message);
 });
+
+setInterval(pollMessages, 2000);
 
 // --- form + typing ---
 document.getElementById("chatForm").addEventListener("submit", (event) => {

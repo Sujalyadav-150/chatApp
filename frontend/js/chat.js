@@ -33,6 +33,7 @@ const micBtn = document.getElementById("micBtn");
 // --- state ---
 let mode = "personal"; // "personal" | "group"
 let currentRoom = null;
+let loadedRoom = null;
 let receiverUser = null; // email of the other person (personal chat)
 let currentGroupId = null;
 let lastIncomingText = "";
@@ -111,24 +112,27 @@ function showRoom(text) {
 }
 
 async function loadMessages() {
-  if (!currentRoom) return;
+  const roomId = currentRoom;
+  if (!roomId) return;
+  loadedRoom = null;
 
-  const res = await fetch(`${API.messages}/${encodeURIComponent(currentRoom)}`, {
+  const res = await fetch(`${API.messages}/${encodeURIComponent(roomId)}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
 
-  messagesBox.innerHTML = "";
-  renderedIds.clear();
-  if (!res.ok) return;
+  if (!res.ok || roomId !== currentRoom) return;
 
   const data = await res.json();
+  messagesBox.innerHTML = "";
+  renderedIds.clear();
   (data.messages || []).forEach(addMessage);
+  loadedRoom = roomId;
   scrollToBottom();
 }
 
 async function pollMessages() {
   const roomId = currentRoom;
-  if (!roomId) return;
+  if (!roomId || loadedRoom !== roomId) return;
 
   try {
     const res = await fetch(`${API.messages}/${encodeURIComponent(roomId)}`, {
@@ -137,7 +141,17 @@ async function pollMessages() {
     if (!res.ok || roomId !== currentRoom) return;
 
     const data = await res.json();
-    (data.messages || []).forEach(addMessage);
+    (data.messages || []).forEach((message) => {
+      const isNew = message._id && !renderedIds.has(String(message._id));
+      addMessage(message);
+
+      const sender = message.senderId || {};
+      const senderId = sender._id || sender;
+      if (isNew && String(senderId) !== String(currentUser.id) && (message.messageType || "text") === "text") {
+        lastIncomingText = message.text;
+        requestSmartReplies(message.text);
+      }
+    });
   } catch {
   }
 }

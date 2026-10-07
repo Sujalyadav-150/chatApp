@@ -638,6 +638,20 @@ header {
   background: linear-gradient(145deg, #6864e5, #5551d0);
   box-shadow: 0 6px 16px rgba(91, 87, 217, .17);
 }
+.chat-page .message.deleted-message {
+  padding: 10px 14px;
+  border: 1px solid #e5e7ee;
+  background: #f2f3f7;
+  box-shadow: none;
+  color: #777c90;
+  font-style: italic;
+}
+.chat-page .message.mine.deleted-message {
+  border-color: rgba(255,255,255,.25);
+  background: #ececff;
+  color: #6864a0;
+}
+.chat-page .message.deleted-message .msg-text { font-size: 13px; }
 .chat-page .msg-author { color: #787e94; font-size: 10px; letter-spacing: .015em; }
 .chat-page .message.mine .msg-author { color: rgba(255,255,255,.76); }
 

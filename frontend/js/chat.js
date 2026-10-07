@@ -217,7 +217,16 @@ function addMessage(message) {
 
   // Guard against showing the same message twice (socket broadcast + local echo).
   if (message._id) {
-    if (renderedIds.has(String(message._id))) return;
+    if (renderedIds.has(String(message._id))) {
+      const existing = messagesBox.querySelector(
+        `[data-message-id="${CSS.escape(String(message._id))}"]`
+      );
+      if (message.deletedForEveryone && existing?.dataset.deletedForEveryone !== "true") {
+        existing.dataset.deletedForEveryone = "true";
+        renderDeletedMessage(existing);
+      }
+      return;
+    }
     renderedIds.add(String(message._id));
   }
 
@@ -228,6 +237,15 @@ function addMessage(message) {
   const div = document.createElement("div");
   div.className = String(senderId) === String(currentUser.id) ? "message mine" : "message";
   div.dataset.messageId = String(message._id || "");
+  div.dataset.senderId = String(senderId);
+  div.dataset.deletedForEveryone = String(Boolean(message.deletedForEveryone));
+
+  if (message.deletedForEveryone) {
+    renderDeletedMessage(div);
+    messagesBox.appendChild(div);
+    scrollToBottom();
+    return;
+  }
 
   if (message._id) {
     const actions = document.createElement("div");
@@ -251,6 +269,18 @@ function addMessage(message) {
   renderBody(div, message);
   messagesBox.appendChild(div);
   scrollToBottom();
+}
+
+function renderDeletedMessage(element) {
+  element.classList.add("deleted-message");
+  element.replaceChildren();
+
+  const text = document.createElement("div");
+  text.className = "msg-text";
+  text.textContent = element.dataset.senderId === String(currentUser.id)
+    ? "You deleted this message"
+    : "This message was deleted";
+  element.appendChild(text);
 }
 
 function renderBody(container, message) {
@@ -341,7 +371,18 @@ async function deleteSelectedMessage(scope) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Message could not be deleted");
 
-    removeMessageElement(message._id);
+    if (scope === "everyone") {
+      selectedMessageToDelete.deletedForEveryone = true;
+      const element = messagesBox.querySelector(
+        `[data-message-id="${CSS.escape(String(message._id))}"]`
+      );
+      if (element) {
+        element.dataset.deletedForEveryone = "true";
+        renderDeletedMessage(element);
+      }
+    } else {
+      removeMessageElement(message._id);
+    }
     deleteDialog.close();
   } catch (error) {
     deleteDialogError.textContent = error.message;
@@ -744,7 +785,17 @@ socket.on("new_message", (message) => {
 socket.on("message_deleted", ({ roomId, messageId, scope, userId }) => {
   if (roomId !== currentRoom) return;
   if (scope === "me" && String(userId) !== String(currentUser.id)) return;
-  removeMessageElement(messageId);
+  if (scope === "everyone") {
+    const element = messagesBox.querySelector(
+      `[data-message-id="${CSS.escape(String(messageId))}"]`
+    );
+    if (element) {
+      element.dataset.deletedForEveryone = "true";
+      renderDeletedMessage(element);
+    }
+  } else {
+    removeMessageElement(messageId);
+  }
 });
 
 socket.on("chat_error", (error) => {

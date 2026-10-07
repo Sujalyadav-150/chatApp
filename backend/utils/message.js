@@ -16,6 +16,7 @@ function toPublicMessage(messageDoc) {
         : sender,
     receiverId: message.receiverId || null,
     groupId: message.groupId || null,
+    deletedForEveryone: Boolean(message.deletedForEveryone),
     messageType: message.messageType || "text",
     text: message.text || "",
     mediaUrl: message.mediaUrl || "",

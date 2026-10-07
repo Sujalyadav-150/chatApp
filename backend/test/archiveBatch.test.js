@@ -73,7 +73,7 @@ test("archives and deletes old messages in bounded batches, leaving recent messa
   const messages = [
     message("old-1", new Date("2026-10-01T00:00:00Z")),
     message("old-2", new Date("2026-10-02T00:00:00Z"), "audio"),
-    message("old-3", new Date("2026-10-03T00:00:00Z")),
+    { ...message("old-3", new Date("2026-10-03T00:00:00Z")), deletedForEveryone: true },
     message("recent", new Date("2026-10-07T00:00:00Z"))
   ];
   const models = createModels(messages);
@@ -84,6 +84,7 @@ test("archives and deletes old messages in bounded batches, leaving recent messa
   assert.deepEqual(models.batchSizes, [2, 1, 0]);
   assert.equal(models.archive.size, 3);
   assert.equal(models.archive.get("old-2").messageType, "audio");
+  assert.equal(models.archive.get("old-3").deletedForEveryone, true);
   assert.deepEqual(messages.map(({ _id }) => _id), ["recent"]);
 });
 

@@ -148,7 +148,9 @@ run drains all messages older than `ARCHIVE_AFTER_HOURS` before finishing.
 ### Deleting messages
 
 From a message's menu, participants can delete it just for themselves. Only its
-sender can delete it for everyone. Per-user deletions are stored on the message
+sender can delete it for everyone. A message deleted for everyone is replaced
+with a notice ("You deleted this message" for its sender and "This message was
+deleted" for other participants). Per-user deletions are stored on the message
 and copied to the archive; the polling client also reconciles removed messages
 so deletes stay visible when Socket.IO is unavailable.
 

@@ -87,11 +87,29 @@ const deleteMessage = async (req, res) => {
     const io = req.app.get("io");
 
     if (scope === "everyone") {
-      const result = await Message.deleteOne({ _id: message._id, roomId, senderId: req.user.id });
-      if (!result.deletedCount) {
+      const result = await Message.updateOne(
+        { _id: message._id, roomId, senderId: req.user.id, deletedForEveryone: { $ne: true } },
+        {
+          $set: {
+            deletedForEveryone: true,
+            messageType: "text",
+            text: "",
+            mediaUrl: "",
+            mediaName: "",
+            mediaSize: 0
+          }
+        }
+      );
+      if (!result.modifiedCount) {
         return res.status(404).json({ success: false, message: "Message was already deleted" });
       }
-      if (io) io.to(roomId).emit("message_deleted", { roomId, messageId: String(message._id), scope });
+      if (io) {
+        io.to(roomId).emit("message_deleted", {
+          roomId,
+          messageId: String(message._id),
+          scope
+        });
+      }
     } else {
       const result = await Message.updateOne(
         { _id: message._id, roomId },

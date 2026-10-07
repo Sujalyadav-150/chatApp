@@ -10,6 +10,7 @@ const messageSchema = new mongoose.Schema(
     receiverId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group", default: null, index: true },
     deletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    deletedForEveryone: { type: Boolean, default: false },
     // "text" | "image" | "video" | "audio" | "file"
     messageType: { type: String, enum: ["text", "image", "video", "audio", "file"], default: "text" },
     text: { type: String, trim: true, default: "" },

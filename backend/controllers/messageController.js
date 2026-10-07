@@ -3,6 +3,7 @@ const Group = require("../models/Group");
 const User = require("../models/User");
 const { createRoomId } = require("../utils/room");
 const { toPublicMessage } = require("../utils/message");
+const { resolveMessageTarget } = require("../utils/messageTarget");
 
 // Check that the logged-in user is allowed to read/write this room.
 // Prevents a client from reading an arbitrary room by guessing its id.
@@ -34,13 +35,27 @@ const getMessages = async (req, res) => {
   try {
     const { roomId } = req.params;
 
-    if (!(await canAccessRoom(req.user, roomId))) {
-      return res
-        .status(403)
-        .json({ success: false, message: "You do not have access to this room" });
+    let messageQuery;
+    if (roomId.startsWith("group_")) {
+      const group = await Group.findOne({ roomId }).select("_id members");
+      if (!group || !group.members.some((member) => String(member) === String(req.user.id))) {
+        return res.status(403).json({ success: false, message: "You do not have access to this room" });
+      }
+      messageQuery = { roomId, groupId: group._id, receiverId: null };
+    } else {
+      if (!(await canAccessRoom(req.user, roomId))) {
+        return res
+          .status(403)
+          .json({ success: false, message: "You do not have access to this room" });
+      }
+      messageQuery = {
+        roomId,
+        groupId: null,
+        $or: [{ senderId: req.user.id }, { receiverId: req.user.id }]
+      };
     }
 
-    const messages = await Message.find({ roomId })
+    const messages = await Message.find(messageQuery)
       .sort({ createdAt: 1 })
       .populate("senderId", "name email");
 
@@ -54,6 +69,7 @@ const sendMessage = async (req, res) => {
   try {
     const { roomId } = req.params;
     const text = String(req.body.text || "").trim();
+    const target = resolveMessageTarget(roomId, req.body);
     if (!text) {
       return res.status(400).json({ success: false, message: "Message cannot be empty" });
     }
@@ -61,8 +77,8 @@ const sendMessage = async (req, res) => {
     let receiverId = null;
     let groupId = null;
 
-    if (roomId.startsWith("group_")) {
-      const group = await Group.findOne({ roomId }).select("_id members");
+    if (target.type === "group") {
+      const group = await Group.findOne({ roomId, _id: target.groupId }).select("_id members");
       if (!group) {
         return res.status(404).json({ success: false, message: "Group not found" });
       }
@@ -73,12 +89,7 @@ const sendMessage = async (req, res) => {
       }
       groupId = group._id;
     } else {
-      const receiverEmail = String(req.body.receiverEmail || "").trim().toLowerCase();
-      if (!receiverEmail) {
-        return res.status(400).json({ success: false, message: "receiverEmail is required" });
-      }
-
-      const receiver = await User.findOne({ email: receiverEmail }).select("_id email");
+      const receiver = await User.findOne({ email: target.receiverEmail }).select("_id email");
       if (!receiver) {
         return res.status(404).json({ success: false, message: "Receiver does not exist" });
       }
@@ -107,7 +118,7 @@ const sendMessage = async (req, res) => {
 
     res.status(201).json({ success: true, message: payload });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(error.status || 500).json({ success: false, message: error.message });
   }
 };
 

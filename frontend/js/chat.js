@@ -63,6 +63,18 @@ function createRoomId(emailA, emailB) {
 
 // --- tabs ---
 function switchTab(tab) {
+  if (mode !== tab) {
+    currentRoom = null;
+    loadedRoom = null;
+    receiverUser = null;
+    currentGroupId = null;
+    messagesBox.replaceChildren();
+    renderedIds.clear();
+    roomBar.textContent = "";
+    roomBar.classList.add("hidden");
+    resetAiState();
+  }
+
   mode = tab;
   document.getElementById("tabPersonal").classList.toggle("active", tab === "personal");
   document.getElementById("tabGroup").classList.toggle("active", tab === "group");
@@ -93,10 +105,10 @@ async function startChat() {
     return;
   }
 
+  switchTab("personal");
   msg.textContent = `Chatting with ${data.user.name}`;
   receiverUser = data.user.email;
   currentGroupId = null;
-  switchTab("personal");
 
   currentRoom = createRoomId(currentUser.email, receiverUser);
   socket.emit("join_room", { roomId: currentRoom, receiverEmail: receiverUser });
@@ -115,6 +127,8 @@ async function loadMessages() {
   const roomId = currentRoom;
   if (!roomId) return;
   loadedRoom = null;
+  messagesBox.replaceChildren();
+  renderedIds.clear();
 
   const res = await fetch(`${API.messages}/${encodeURIComponent(roomId)}`, {
     headers: { Authorization: `Bearer ${token}` }
@@ -243,7 +257,11 @@ async function sendMessage() {
   const value = textInput.value.trim();
   if (!value) return;
 
-  if (!currentRoom || (mode === "group" && !currentGroupId) || (mode === "personal" && !receiverUser)) return;
+  if (
+    !currentRoom ||
+    (mode === "group" && (!currentGroupId || currentRoom !== `group_${currentGroupId}`)) ||
+    (mode === "personal" && (!receiverUser || currentRoom !== createRoomId(currentUser.email, receiverUser)))
+  ) return;
 
   const roomId = currentRoom;
   const body = mode === "group"
@@ -411,10 +429,10 @@ function openGroup(groupId) {
 }
 
 function joinGroup(groupId) {
+  switchTab("group");
   currentGroupId = groupId;
   currentRoom = `group_${groupId}`;
   receiverUser = null;
-  switchTab("group");
   socket.emit("join_group", { groupId });
   resetAiState();
   loadMessages();
@@ -581,14 +599,17 @@ function resetAiState() {
 
 // --- socket events ---
 socket.on("room_joined", async ({ roomId, roomType, groupId }) => {
-  currentRoom = roomId;
+  if (roomId !== currentRoom) return;
 
   if (roomType === "group") {
+    if (mode !== "group" || String(groupId) !== String(currentGroupId)) return;
     currentGroupId = groupId;
     const option = Array.from(document.getElementById("groupSelect").options)
       .find((o) => o.value === groupId);
     const label = option ? option.textContent.replace(/\s*\(\d+ members\)$/, "") : "Group";
     showRoom(`Group: ${label} (${roomId})`);
+  } else if (roomType !== "personal" || mode !== "personal") {
+    return;
   }
 
   await loadMessages();

@@ -9,6 +9,13 @@
 
 Server: http://localhost:3000
 
+## Tests
+Run the backend unit tests with:
+
+```bash
+npm test
+```
+
 ## Main concepts
 - Express server
 - REST APIs

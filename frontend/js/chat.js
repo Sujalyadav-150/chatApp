@@ -61,9 +61,26 @@ function createRoomId(emailA, emailB) {
   return [emailA.toLowerCase(), emailB.toLowerCase()].sort().join("_");
 }
 
+function isCurrentConversationMessage(message, roomId = currentRoom) {
+  if (!message || message.roomId !== roomId) return false;
+
+  const groupId = message.groupId && (message.groupId._id || message.groupId);
+  if (mode === "group") {
+    return Boolean(currentGroupId) &&
+      String(groupId) === String(currentGroupId) &&
+      !message.receiverId;
+  }
+
+  return !groupId && Boolean(message.receiverId);
+}
+
 // --- tabs ---
 function switchTab(tab) {
   if (mode !== tab) {
+    if (mode === "group") {
+      document.getElementById("groupSelect").value = "";
+    }
+
     currentRoom = null;
     loadedRoom = null;
     receiverUser = null;
@@ -176,6 +193,8 @@ function scrollToBottom() {
 
 // Render a text or media message (images, videos, files).
 function addMessage(message) {
+  if (!isCurrentConversationMessage(message)) return;
+
   // Guard against showing the same message twice (socket broadcast + local echo).
   if (message._id) {
     if (renderedIds.has(String(message._id))) return;

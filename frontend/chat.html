@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ChatApp - Chat</title><link rel="stylesheet" href="css/style.css"></head>
-<body>
+<body class="chat-page">
 <div class="chat">
   <header>
-    <strong id="me"></strong>
+    <div class="brand-cluster">
+      <span class="brand-mark" aria-hidden="true">✦</span>
+      <div class="brand-copy">
+        <span class="brand-name">ChatApp</span>
+        <strong id="me"></strong>
+      </div>
+    </div>
     <div class="header-actions">
       <label class="tone-label" for="tone">Tone</label>
       <select id="tone" title="AI suggestion tone">

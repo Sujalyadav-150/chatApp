@@ -817,6 +817,27 @@ function logout() {
   location.href = "login.html";
 }
 
+function applyTheme(theme) {
+  const isDark = theme === "dark";
+  document.body.classList.toggle("dark-theme", isDark);
+
+  const toggle = document.getElementById("themeToggle");
+  if (toggle) {
+    const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+    toggle.textContent = isDark ? "☀" : "☾";
+    toggle.setAttribute("aria-label", label);
+    toggle.title = label;
+    toggle.setAttribute("aria-pressed", String(isDark));
+  }
+}
+
+function toggleTheme() {
+  const nextTheme = document.body.classList.contains("dark-theme") ? "light" : "dark";
+  localStorage.setItem("chatTheme", nextTheme);
+  applyTheme(nextTheme);
+}
+
 // --- init ---
+applyTheme(localStorage.getItem("chatTheme") || "light");
 loadMembers();
 loadGroups();

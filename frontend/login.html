@@ -1,16 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ChatApp - Login</title><link rel="stylesheet" href="css/style.css"></head>
-<body>
-<div class="card">
-  <h1>Welcome back</h1>
-  <p>Sign in to continue your conversations.</p>
-  <input id="identifier" placeholder="Email or phone" autocomplete="username">
-  <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-  <button onclick="login()">Login</button>
-  <p id="msg"></p>
-  <a href="signup.html">New here? Create an account</a>
-</div>
+<body class="auth-page">
+<main class="auth-layout">
+  <section class="auth-showcase" aria-label="ChatApp introduction">
+    <a class="auth-brand" href="index.html" aria-label="ChatApp home">
+      <span class="auth-brand-mark" aria-hidden="true">✦</span>
+      <span>ChatApp</span>
+    </a>
+    <div class="showcase-copy">
+      <span class="showcase-eyebrow"><span></span> YOUR SPACE TO CONNECT</span>
+      <h1>Good conversations<br>start <em>here.</em></h1>
+      <p>Catch up one-to-one, bring your people together, and keep every conversation flowing.</p>
+    </div>
+    <div class="chat-preview" aria-hidden="true">
+      <div class="preview-topline">
+        <span class="preview-avatar">M</span>
+        <span><strong>Maya</strong><small>online now</small></span>
+        <span class="preview-dots">•••</span>
+      </div>
+      <div class="preview-day">TODAY, 10:42 AM</div>
+      <div class="preview-bubble incoming">Hey! Are we still on for coffee? ☕</div>
+      <div class="preview-bubble outgoing">Absolutely! Looking forward to it.</div>
+      <div class="preview-typing"><i></i><i></i><i></i><span>Maya is typing</span></div>
+    </div>
+    <div class="showcase-foot"><span class="online-pulse"></span> A little more connected, every day.</div>
+  </section>
+
+  <section class="auth-form-panel">
+    <div class="auth-card">
+      <div class="auth-mobile-brand">
+        <span class="auth-brand-mark" aria-hidden="true">✦</span>
+        <span>ChatApp</span>
+      </div>
+      <span class="auth-kicker">WELCOME BACK</span>
+      <h2>Sign in to ChatApp</h2>
+      <p class="auth-subtitle">Your conversations are just a moment away.</p>
+
+      <div class="auth-fields">
+        <label for="identifier">Email or phone</label>
+        <input id="identifier" placeholder="you@example.com or phone number" autocomplete="username">
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+
+      <button class="auth-submit" onclick="login()">Sign in <span aria-hidden="true">→</span></button>
+      <p id="msg" class="auth-message" role="status" aria-live="polite"></p>
+      <p class="auth-switch">New to ChatApp? <a href="signup.html">Create an account <span aria-hidden="true">→</span></a></p>
+      <div class="auth-secure"><span aria-hidden="true">✧</span> Your conversations stay yours</div>
+    </div>
+    <footer class="auth-footer">Made for the moments worth sharing.</footer>
+  </section>
+</main>
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 </body>

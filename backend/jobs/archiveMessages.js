@@ -1,68 +1,33 @@
 // Scheduled job: move messages older than the retention window from the active
 // Chat collection (Message) into ArchivedChat.
 //
-// Safety design (never lose messages):
-//   1. find messages older than the cutoff
-//   2. insert them into ArchivedChat FIRST
-//   3. only delete from Message AFTER the insert succeeded
-//   4. if anything throws, we delete nothing - the messages stay in Message
+// Each bounded batch is archived before its source messages are deleted.
+// A failed batch remains in Message and can be retried without archive duplicates.
 const cron = require("node-cron");
 const Message = require("../models/Message");
 const ArchivedChat = require("../models/ArchivedChat");
+const { archiveOldMessages: archiveMessagesInBatches } = require("./archiveBatch");
 
 // Configurable through .env
 const RETENTION_HOURS = Number(process.env.ARCHIVE_AFTER_HOURS) || 24;
-const SCHEDULE = process.env.ARCHIVE_CRON || "0 * * * *"; // every hour
+const configuredBatchSize = process.env.ARCHIVE_BATCH_SIZE
+  ? Number(process.env.ARCHIVE_BATCH_SIZE)
+  : 500;
+const BATCH_SIZE = Number.isInteger(configuredBatchSize) && configuredBatchSize > 0
+  ? configuredBatchSize
+  : 500;
+const SCHEDULE = process.env.ARCHIVE_CRON || "0 2 * * *"; // daily at 02:00 UTC
+
+if (BATCH_SIZE !== configuredBatchSize) {
+  console.error(`[archive] invalid ARCHIVE_BATCH_SIZE "${process.env.ARCHIVE_BATCH_SIZE}", using 500`);
+}
 
 // Simple in-memory lock so two runs never overlap.
 let running = false;
 
 async function archiveOldMessages() {
   const cutoff = new Date(Date.now() - RETENTION_HOURS * 60 * 60 * 1000);
-
-  const oldMessages = await Message.find({ createdAt: { $lt: cutoff } }).lean();
-
-  if (!oldMessages.length) {
-    return { archived: 0, deleted: 0 };
-  }
-
-  // Upsert by originalId so the job is safe to retry. For example, if the
-  // process crashes after archiving but before deleting, the next run updates
-  // the same archive documents instead of creating duplicates.
-  const operations = oldMessages.map((m) => ({
-    updateOne: {
-      filter: { originalId: m._id },
-      update: {
-        $set: {
-          roomId: m.roomId,
-          senderId: m.senderId,
-          receiverId: m.receiverId,
-          groupId: m.groupId,
-          messageType: m.messageType,
-          text: m.text,
-          mediaUrl: m.mediaUrl,
-          mediaName: m.mediaName,
-          mediaSize: m.mediaSize,
-          messageCreatedAt: m.createdAt,
-          messageUpdatedAt: m.updatedAt
-        },
-        $setOnInsert: {
-          originalId: m._id,
-          archivedAt: new Date()
-        }
-      },
-      upsert: true
-    }
-  }));
-
-  // Step 1: archive first. If this fails, nothing is deleted from Message.
-  await ArchivedChat.bulkWrite(operations, { ordered: false });
-
-  // Step 2: delete only after all archive writes have completed successfully.
-  const ids = oldMessages.map((m) => m._id);
-  const result = await Message.deleteMany({ _id: { $in: ids } });
-
-  return { archived: oldMessages.length, deleted: result.deletedCount };
+  return archiveMessagesInBatches({ Message, ArchivedChat, cutoff, batchSize: BATCH_SIZE });
 }
 
 async function runArchiveSafely() {
@@ -74,13 +39,16 @@ async function runArchiveSafely() {
   try {
     const summary = await archiveOldMessages();
     if (summary.archived) {
-      console.log(`[archive] moved ${summary.archived} message(s) to ArchivedChat`);
+      console.log(`[archive] moved ${summary.archived} message(s), deleted ${summary.deleted} from Message`);
     }
     return summary;
   } catch (error) {
-    // Never crash the process; nothing was deleted.
-    console.error("[archive] failed, no messages were deleted:", error.message);
-    return { archived: 0, error: error.message };
+    const summary = error.archiveSummary || { archived: 0, deleted: 0 };
+    console.error(
+      `[archive] failed after archiving ${summary.archived} and deleting ${summary.deleted}; current batch was retained:`,
+      error.message
+    );
+    return { ...summary, error: error.message };
   } finally {
     running = false;
   }
@@ -97,4 +65,11 @@ function startArchiveJob() {
   return task;
 }
 
-module.exports = { startArchiveJob, runArchiveSafely, archiveOldMessages, RETENTION_HOURS, SCHEDULE };
+module.exports = {
+  startArchiveJob,
+  runArchiveSafely,
+  archiveOldMessages,
+  RETENTION_HOURS,
+  BATCH_SIZE,
+  SCHEDULE
+};

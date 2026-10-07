@@ -25,8 +25,10 @@ services:
         value: "false"
       - key: ARCHIVE_AFTER_HOURS
         value: "24"
+      - key: ARCHIVE_BATCH_SIZE
+        value: "500"
       - key: ARCHIVE_CRON
-        value: "0 * * * *"
+        value: "0 2 * * *"
       - key: MAX_UPLOAD_BYTES
         value: "26214400"
 
@@ -35,10 +37,12 @@ services:
     runtime: node
     rootDir: backend
     buildCommand: npm ci
-    schedule: "0 * * * *"
+    schedule: "0 2 * * *"
     startCommand: npm run archive
     envVars:
       - key: MONGO_URI
         sync: false
       - key: ARCHIVE_AFTER_HOURS
         value: "24"
+      - key: ARCHIVE_BATCH_SIZE
+        value: "500"

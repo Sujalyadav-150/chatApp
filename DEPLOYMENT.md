@@ -50,6 +50,7 @@ AWS_S3_BUCKET=<bucket name>
 CLIENT_ORIGIN=https://chat-app-phi-brown-66.vercel.app
 ENABLE_INTERNAL_ARCHIVE_CRON=false
 ARCHIVE_AFTER_HOURS=24
+ARCHIVE_BATCH_SIZE=500
 MAX_UPLOAD_BYTES=26214400
 ```
 
@@ -57,14 +58,15 @@ Do not upload `backend/.env` or commit secrets to GitHub.
 
 ## 4. Render cron job
 
-The blueprint creates an hourly cron job:
+The blueprint creates a daily cron job at 02:00 UTC:
 
 ```text
 npm run archive
 ```
 
 It moves messages older than 24 hours into `ArchivedChat` and then deletes the
-successfully archived messages from `Message`.
+successfully archived messages from `Message`, processing up to 500 at a time
+to keep memory bounded. A run continues through all batches before exiting.
 
 The `CLIENT_ORIGIN` value may be a comma-separated list of allowed origins. The
 frontend selects `http://localhost:3000` for local development and

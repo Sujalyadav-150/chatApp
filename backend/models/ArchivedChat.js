@@ -10,7 +10,7 @@ const archivedChatSchema = new mongoose.Schema({
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   receiverId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group", default: null },
-  messageType: { type: String, enum: ["text", "image", "video", "file"], default: "text" },
+  messageType: { type: String, enum: ["text", "image", "video", "audio", "file"], default: "text" },
   text: { type: String, trim: true, default: "" },
   mediaUrl: { type: String, default: "" },
   mediaName: { type: String, default: "" },

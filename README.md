@@ -141,6 +141,9 @@ npm run archive
 
 The archive operation is retry-safe: it upserts by the original message ID and
 only deletes from `Message` after the archive writes succeed.
+Messages are processed in configurable batches (`ARCHIVE_BATCH_SIZE`, default
+500) to keep memory use bounded. The Render cron runs daily at 02:00 UTC; each
+run drains all messages older than `ARCHIVE_AFTER_HOURS` before finishing.
 
 ### Deployment
 

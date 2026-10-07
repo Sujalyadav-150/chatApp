@@ -9,6 +9,7 @@ const { runArchiveSafely } = require("./archiveMessages");
     await connectDB();
     const result = await runArchiveSafely();
     console.log("[archive-once]", result);
+    if (result.error) process.exitCode = 1;
   } catch (error) {
     console.error("[archive-once] failed:", error.message);
     process.exitCode = 1;

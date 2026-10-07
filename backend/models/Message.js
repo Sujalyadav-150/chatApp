@@ -19,7 +19,7 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Used by the archiving job to find messages older than a day.
-messageSchema.index({ createdAt: 1 });
+// Supports the archive job's bounded oldest-first scan.
+messageSchema.index({ createdAt: 1, _id: 1 });
 
 module.exports = mongoose.model("Message", messageSchema);

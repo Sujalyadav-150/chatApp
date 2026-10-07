@@ -145,6 +145,13 @@ Messages are processed in configurable batches (`ARCHIVE_BATCH_SIZE`, default
 500) to keep memory use bounded. The Render cron runs daily at 02:00 UTC; each
 run drains all messages older than `ARCHIVE_AFTER_HOURS` before finishing.
 
+### Deleting messages
+
+From a message's menu, participants can delete it just for themselves. Only its
+sender can delete it for everyone. Per-user deletions are stored on the message
+and copied to the archive; the polling client also reconciles removed messages
+so deletes stay visible when Socket.IO is unavailable.
+
 ### Deployment
 
 The included `render.yaml` is prepared for Render. It creates:

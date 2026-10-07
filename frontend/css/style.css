@@ -557,14 +557,82 @@ header {
 }
 
 .chat-page .message {
+  position: relative;
   max-width: min(72%, 600px);
   margin: 9px 0;
   padding: 11px 15px;
+  padding-right: 42px;
   border-color: #e9ebf2;
   border-radius: 17px 17px 17px 6px;
   box-shadow: 0 3px 12px rgba(36, 44, 78, .045);
   overflow-wrap: anywhere;
 }
+.message-actions { position: absolute; top: 5px; right: 5px; }
+.message-delete-button {
+  width: 28px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  box-shadow: none;
+  color: #777d91;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity .15s ease, background .15s ease;
+}
+.message:hover .message-delete-button,
+.message:focus-within .message-delete-button { opacity: 1; }
+.message-delete-button:hover { transform: none; background: rgba(100, 105, 130, .12); color: #3e4257; }
+.message.mine .message-delete-button { color: rgba(255,255,255,.8); }
+.message.mine .message-delete-button:hover { background: rgba(255,255,255,.16); color: #fff; }
+
+.delete-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 0;
+  overflow: visible;
+  border: 1px solid rgba(226, 228, 237, .9);
+  border-radius: 22px;
+  background: #fff;
+  color: #25293b;
+  box-shadow: 0 28px 90px rgba(19, 23, 52, .24);
+}
+.delete-dialog::backdrop { background: rgba(23, 26, 43, .52); backdrop-filter: blur(3px); }
+.delete-dialog-content { padding: 26px 26px 22px; }
+.delete-dialog-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #fff0f0;
+  color: #d6535c;
+  font-size: 23px;
+}
+.delete-dialog h2 { margin: 17px 0 7px; font-size: 19px; letter-spacing: -.35px; }
+.delete-dialog-content > p:not(.delete-dialog-error) { margin: 0; color: #777c90; font-size: 13px; line-height: 1.6; }
+.delete-dialog-error { min-height: 0; margin: 0; color: #c43e4a; font-size: 12px; }
+.delete-dialog-error:not(:empty) { margin-top: 10px; }
+.delete-dialog-actions { display: grid; gap: 8px; margin-top: 21px; }
+.delete-dialog-actions button {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  border-radius: 11px;
+  box-shadow: none;
+  font-size: 13px;
+}
+.delete-dialog-actions .delete-everyone { background: #df505b; color: #fff; }
+.delete-dialog-actions .delete-everyone:hover { background: #c9414b; }
+.delete-dialog-actions .delete-for-me { border: 1px solid #e5e6ee; background: #f7f7fa; color: #44485a; }
+.delete-dialog-actions .delete-for-me:hover { background: #eeeeF4; color: #292d3d; }
+.delete-dialog-actions .delete-cancel { background: transparent; color: #777c90; }
+.delete-dialog-actions .delete-cancel:hover { background: #f5f5f8; color: #45495b; }
+.delete-dialog-actions button:disabled { cursor: wait; opacity: .65; }
 .chat-page .message.mine {
   border-radius: 17px 17px 6px 17px;
   background: linear-gradient(145deg, #6864e5, #5551d0);
@@ -620,6 +688,7 @@ header {
   .chat-page .tabs { padding: 9px 12px; }
   .chat-page .setup { padding: 10px 12px; }
   .chat-page .message { max-width: 86%; }
+  .chat-page .message-delete-button { opacity: 1; }
   .chat-page .chip-row { padding-left: 12px; padding-right: 12px; }
   .chat-page .upload-row { padding: 8px 11px 5px; }
   .chat-page #chatForm { gap: 7px !important; padding: 8px 11px 12px; }
@@ -946,6 +1015,19 @@ header {
   background: linear-gradient(145deg, #625dd1, #504bb9);
   color: #fff;
 }
+.chat-page.dark-theme .message-delete-button { color: #b6b8c8; }
+.chat-page.dark-theme .message.mine .message-delete-button { color: rgba(255,255,255,.82); }
+.chat-page.dark-theme .delete-dialog {
+  border-color: #393b4c;
+  background: #222430;
+  color: #ececf5;
+}
+.chat-page.dark-theme .delete-dialog-icon { background: #422a34; color: #ff969d; }
+.chat-page.dark-theme .delete-dialog-content > p:not(.delete-dialog-error) { color: #a6a8bb; }
+.chat-page.dark-theme .delete-dialog-actions .delete-for-me { border-color: #414354; background: #2d2f3e; color: #e2e3ed; }
+.chat-page.dark-theme .delete-dialog-actions .delete-for-me:hover,
+.chat-page.dark-theme .delete-dialog-actions .delete-cancel:hover { background: #383a4c; }
+.chat-page.dark-theme .delete-dialog-actions .delete-cancel { color: #b3b5c6; }
 .chat-page.dark-theme .msg-author { color: #a9abbd; }
 .chat-page.dark-theme .chip-row { background: #151720; }
 .chat-page.dark-theme .suggestions:not(:empty),

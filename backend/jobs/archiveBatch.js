@@ -19,6 +19,7 @@ async function archiveOldMessages({ Message, ArchivedChat, cutoff, batchSize }) 
             senderId: message.senderId,
             receiverId: message.receiverId,
             groupId: message.groupId,
+            deletedFor: message.deletedFor || [],
             messageType: message.messageType,
             text: message.text,
             mediaUrl: message.mediaUrl,

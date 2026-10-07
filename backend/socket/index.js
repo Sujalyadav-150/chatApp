@@ -7,6 +7,7 @@ const registerGroupChat = require("./groupChatHandler");
 function registerSocketHandlers(io) {
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.user.id} (${socket.id})`);
+    socket.join(`user_${socket.user.id}`);
 
     registerPersonalChat(io, socket);
     registerGroupChat(io, socket);

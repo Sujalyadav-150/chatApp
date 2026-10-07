@@ -58,6 +58,20 @@
 
   <main id="messages"></main>
 
+  <dialog id="deleteDialog" class="delete-dialog" aria-labelledby="deleteDialogTitle">
+    <div class="delete-dialog-content">
+      <span class="delete-dialog-icon" aria-hidden="true">⌫</span>
+      <h2 id="deleteDialogTitle">Delete message?</h2>
+      <p id="deleteDialogDescription">Choose whether to remove this message just for you or for everyone.</p>
+      <p id="deleteDialogError" class="delete-dialog-error" role="alert"></p>
+      <div class="delete-dialog-actions">
+        <button type="button" id="deleteForEveryone" class="delete-everyone hidden">Delete for everyone</button>
+        <button type="button" id="deleteForMe" class="delete-for-me">Delete for me</button>
+        <button type="button" id="cancelDelete" class="delete-cancel">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
   <div id="quickReplies" class="chip-row quick-replies" aria-label="AI suggested replies"></div>
   <div id="suggestions" class="chip-row suggestions" aria-label="AI typing suggestions"></div>
 

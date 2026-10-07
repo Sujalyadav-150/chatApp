@@ -29,6 +29,11 @@ const roomBar = document.getElementById("roomBar");
 const emojiBtn = document.getElementById("emojiBtn");
 const emojiPicker = document.getElementById("emojiPicker");
 const micBtn = document.getElementById("micBtn");
+const deleteDialog = document.getElementById("deleteDialog");
+const deleteDialogError = document.getElementById("deleteDialogError");
+const deleteForEveryoneButton = document.getElementById("deleteForEveryone");
+const deleteForMeButton = document.getElementById("deleteForMe");
+let selectedMessageToDelete = null;
 
 // --- state ---
 let mode = "personal"; // "personal" | "group"
@@ -172,7 +177,9 @@ async function pollMessages() {
     if (!res.ok || roomId !== currentRoom) return;
 
     const data = await res.json();
-    (data.messages || []).forEach((message) => {
+    const roomMessages = data.messages || [];
+    reconcileMessages(roomMessages);
+    roomMessages.forEach((message) => {
       const isNew = message._id && !renderedIds.has(String(message._id));
       addMessage(message);
 
@@ -191,6 +198,19 @@ function scrollToBottom() {
   messagesBox.scrollTop = messagesBox.scrollHeight;
 }
 
+function reconcileMessages(messages) {
+  const visibleIds = new Set(
+    messages.filter(isCurrentConversationMessage).map((message) => String(message._id))
+  );
+
+  messagesBox.querySelectorAll("[data-message-id]").forEach((element) => {
+    if (!visibleIds.has(element.dataset.messageId)) {
+      renderedIds.delete(element.dataset.messageId);
+      element.remove();
+    }
+  });
+}
+
 // Render a text or media message (images, videos, files).
 function addMessage(message) {
   if (!isCurrentConversationMessage(message)) return;
@@ -207,6 +227,21 @@ function addMessage(message) {
 
   const div = document.createElement("div");
   div.className = String(senderId) === String(currentUser.id) ? "message mine" : "message";
+  div.dataset.messageId = String(message._id || "");
+
+  if (message._id) {
+    const actions = document.createElement("div");
+    actions.className = "message-actions";
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "message-delete-button";
+    deleteButton.textContent = "⋮";
+    deleteButton.title = "Delete message";
+    deleteButton.setAttribute("aria-label", "Delete message");
+    deleteButton.addEventListener("click", () => showDeleteDialog(message));
+    actions.appendChild(deleteButton);
+    div.appendChild(actions);
+  }
 
   const who = document.createElement("div");
   who.className = "msg-author";
@@ -271,6 +306,63 @@ function addMediaLink(container, message, label) {
   a.textContent = label;
   container.appendChild(a);
 }
+
+function showDeleteDialog(message) {
+  selectedMessageToDelete = message;
+  const sender = message.senderId || {};
+  const senderId = sender._id || sender;
+  const canDeleteForEveryone = String(senderId) === String(currentUser.id);
+  deleteForEveryoneButton.classList.toggle("hidden", !canDeleteForEveryone);
+  deleteDialogError.textContent = "";
+  deleteDialog.showModal();
+}
+
+async function deleteSelectedMessage(scope) {
+  if (!selectedMessageToDelete || !currentRoom) return;
+
+  const message = selectedMessageToDelete;
+  const roomId = currentRoom;
+  const buttons = [deleteForEveryoneButton, deleteForMeButton, document.getElementById("cancelDelete")];
+  buttons.forEach((button) => { button.disabled = true; });
+  deleteDialogError.textContent = "";
+
+  try {
+    const res = await fetch(
+      `${API.messages}/${encodeURIComponent(roomId)}/${encodeURIComponent(message._id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ scope })
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Message could not be deleted");
+
+    removeMessageElement(message._id);
+    deleteDialog.close();
+  } catch (error) {
+    deleteDialogError.textContent = error.message;
+  } finally {
+    buttons.forEach((button) => { button.disabled = false; });
+  }
+}
+
+function removeMessageElement(messageId) {
+  const id = String(messageId);
+  messagesBox.querySelector(`[data-message-id="${CSS.escape(id)}"]`)?.remove();
+  renderedIds.delete(id);
+}
+
+deleteForEveryoneButton.addEventListener("click", () => deleteSelectedMessage("everyone"));
+deleteForMeButton.addEventListener("click", () => deleteSelectedMessage("me"));
+document.getElementById("cancelDelete").addEventListener("click", () => deleteDialog.close());
+deleteDialog.addEventListener("close", () => {
+  selectedMessageToDelete = null;
+  deleteDialogError.textContent = "";
+});
 
 async function sendMessage() {
   const value = textInput.value.trim();
@@ -647,6 +739,12 @@ socket.on("new_message", (message) => {
     lastIncomingText = message.text;
     requestSmartReplies(message.text);
   }
+});
+
+socket.on("message_deleted", ({ roomId, messageId, scope, userId }) => {
+  if (roomId !== currentRoom) return;
+  if (scope === "me" && String(userId) !== String(currentUser.id)) return;
+  removeMessageElement(messageId);
 });
 
 socket.on("chat_error", (error) => {

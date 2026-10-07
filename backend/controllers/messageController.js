@@ -4,6 +4,7 @@ const User = require("../models/User");
 const { createRoomId } = require("../utils/room");
 const { toPublicMessage } = require("../utils/message");
 const { resolveMessageTarget } = require("../utils/messageTarget");
+const { getMessageDeletion } = require("../utils/messageDeletion");
 
 // Check that the logged-in user is allowed to read/write this room.
 // Prevents a client from reading an arbitrary room by guessing its id.
@@ -51,8 +52,13 @@ const getMessages = async (req, res) => {
       messageQuery = {
         roomId,
         groupId: null,
-        $or: [{ senderId: req.user.id }, { receiverId: req.user.id }]
+        $or: [{ senderId: req.user.id }, { receiverId: req.user.id }],
+        deletedFor: { $ne: req.user.id }
       };
+    }
+
+    if (roomId.startsWith("group_")) {
+      messageQuery.deletedFor = { $ne: req.user.id };
     }
 
     const messages = await Message.find(messageQuery)
@@ -62,6 +68,51 @@ const getMessages = async (req, res) => {
     res.json({ success: true, messages });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const deleteMessage = async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+    if (!(await canAccessRoom(req.user, roomId))) {
+      return res.status(403).json({ success: false, message: "You do not have access to this room" });
+    }
+
+    const message = await Message.findOne({ _id: messageId, roomId });
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    const { scope, userId } = getMessageDeletion(message, req.user.id, req.body.scope);
+    const io = req.app.get("io");
+
+    if (scope === "everyone") {
+      const result = await Message.deleteOne({ _id: message._id, roomId, senderId: req.user.id });
+      if (!result.deletedCount) {
+        return res.status(404).json({ success: false, message: "Message was already deleted" });
+      }
+      if (io) io.to(roomId).emit("message_deleted", { roomId, messageId: String(message._id), scope });
+    } else {
+      const result = await Message.updateOne(
+        { _id: message._id, roomId },
+        { $addToSet: { deletedFor: req.user.id } }
+      );
+      if (!result.matchedCount) {
+        return res.status(404).json({ success: false, message: "Message was already deleted" });
+      }
+      if (io) {
+        io.to(`user_${userId}`).emit("message_deleted", {
+          roomId,
+          messageId: String(message._id),
+          scope,
+          userId
+        });
+      }
+    }
+
+    res.json({ success: true, scope });
+  } catch (error) {
+    res.status(error.status || 500).json({ success: false, message: error.message });
   }
 };
 
@@ -122,4 +173,4 @@ const sendMessage = async (req, res) => {
   }
 };
 
-module.exports = { getMessages, sendMessage, canAccessRoom };
+module.exports = { getMessages, sendMessage, deleteMessage, canAccessRoom };

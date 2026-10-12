@@ -12,7 +12,9 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: CLIENT_URL
-        value: https://chat-r65o3fxan-sujal-yadav1.vercel.app
+        value: https://chat-app-phi-eight-54.vercel.app
+      - key: RESEND_API_KEY
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -32,7 +34,7 @@ services:
       - key: AWS_S3_BUCKET
         sync: false
       - key: CLIENT_ORIGIN
-        value: https://chat-r65o3fxan-sujal-yadav1.vercel.app,http://localhost:3000,http://127.0.0.1:3000
+        value: https://chat-app-phi-eight-54.vercel.app,http://localhost:3000,http://127.0.0.1:3000
       - key: ENABLE_INTERNAL_ARCHIVE_CRON
         value: "false"
       - key: ARCHIVE_AFTER_HOURS

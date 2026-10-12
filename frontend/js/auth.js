@@ -26,18 +26,22 @@ async function login() {
     password: document.getElementById("password").value
   };
 
-  const res = await fetch(`${API}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
+  const message = document.getElementById("msg");
+  try {
+    const res = await fetch(`${API}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    message.textContent = data.message;
 
-  const data = await res.json();
-  document.getElementById("msg").textContent = data.message;
-
-  if (data.success) {
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
-    location.href = "chat.html";
+    if (data.success) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      location.href = "chat.html";
+    }
+  } catch (error) {
+    message.textContent = "Could not connect to the server. Please try again.";
   }
 }

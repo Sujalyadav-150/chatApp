@@ -79,7 +79,9 @@ async function requestModel(model, { systemInstruction, prompt, temperature }) {
         systemInstruction ? { role: "system", content: systemInstruction } : null,
         { role: "user", content: prompt }
       ].filter(Boolean),
-      temperature
+      temperature,
+      // Keep response size modest to avoid OpenRouter credit/token errors.
+      max_tokens: Number(process.env.OPENROUTER_MAX_TOKENS) || 512
     })
   });
 

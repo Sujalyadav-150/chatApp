@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
+const mongoose = require("mongoose");
 const path = require("path");
 const { Server } = require("socket.io");
 
@@ -38,12 +39,27 @@ const io = isVercel
 
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
+
+// Keep health checks independent of MongoDB so hosting status can be checked
+// even while database credentials are being corrected.
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    message: "ChatApp API is running",
+    database: mongoose.connection.readyState === 1 ? "connected" : "not-connected"
+  });
+});
+
 app.use(async (req, res, next) => {
   try {
     await connectDB();
     next();
   } catch (error) {
-    next(error);
+    console.error("Database connection failed:", error.message);
+    res.status(503).json({
+      success: false,
+      message: "Database unavailable. Please verify the backend MONGO_URI configuration."
+    });
   }
 });
 
@@ -57,10 +73,6 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/ai", aiRoutes);
-
-app.get("/api/health", (req, res) => {
-  res.json({ success: true, message: "ChatApp backend running" });
-});
 
 app.use(express.static(path.join(__dirname, "../frontend")));
 

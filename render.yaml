@@ -11,6 +11,18 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: CLIENT_URL
+        value: https://chat-ipr6gyy5d-sujal-yadav1.vercel.app
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
@@ -20,7 +32,7 @@ services:
       - key: AWS_S3_BUCKET
         sync: false
       - key: CLIENT_ORIGIN
-        value: https://chat-app-phi-brown-66.vercel.app,http://localhost:3000,http://127.0.0.1:3000
+        value: https://chat-ipr6gyy5d-sujal-yadav1.vercel.app,http://localhost:3000,http://127.0.0.1:3000
       - key: ENABLE_INTERNAL_ARCHIVE_CRON
         value: "false"
       - key: ARCHIVE_AFTER_HOURS

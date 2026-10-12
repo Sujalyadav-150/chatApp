@@ -1076,3 +1076,17 @@ header {
 .chat-page.dark-theme .emoji-item { color: #f0f0f5 !important; }
 .chat-page.dark-theme .emoji-item:hover { background: #343748 !important; }
 .chat-page.dark-theme .chat :focus-visible { outline-color: rgba(166,161,255,.65); }
+
+
+/* Forgot/reset password */
+.auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -1px 0 7px;
+  font-size: 12px;
+}
+.auth-forgot-row a { color: #5955cf; font-weight: 700; text-decoration: none; }
+.auth-forgot-row a:hover { text-decoration: underline; }
+.auth-message-success { color: #16835f !important; }
+.auth-message a { color: #5955cf; font-weight: 700; }
+.auth-submit:disabled { cursor: wait; opacity: .72; transform: none; }

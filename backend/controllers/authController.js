@@ -82,7 +82,7 @@ exports.login = async (req, res) => {
 
 // Always return the same public response so an attacker cannot enumerate registered emails.
 exports.forgotPassword = async (req, res) => {
-  const publicMessage = "If an account exists for that email, a password reset link will be sent shortly.";
+  const publicMessage = "If an account exists for that email, a password reset link has been sent. Please check your inbox and spam folder.";
   try {
     const email = String(req.body.email || "").trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -92,15 +92,23 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (user) {
       const rawToken = crypto.randomBytes(32).toString("hex");
-      user.passwordResetToken = crypto.createHash("sha256").update(rawToken).digest("hex");
-      user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
-      await user.save();
+      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+      const tokenExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+      // Use updateOne instead of document.save(): legacy user records may not
+      // contain newer required fields (such as phone), which would trigger
+      // unrelated schema validation and block password reset.
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { passwordResetToken: tokenHash, passwordResetExpires: tokenExpires } }
+      );
 
       const baseUrl = (process.env.CLIENT_URL || "").replace(/\/$/, "");
       if (!baseUrl) {
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        await user.save();
+        await User.updateOne(
+          { _id: user._id },
+          { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } }
+        );
         console.error("CLIENT_URL is missing; password reset email was not sent.");
         return res.status(503).json({ success: false, message: "Password reset is not configured yet. Please contact support." });
       }
@@ -112,9 +120,10 @@ exports.forgotPassword = async (req, res) => {
           resetUrl: `${baseUrl}/reset-password.html?token=${rawToken}`
         });
       } catch (mailError) {
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        await user.save();
+        await User.updateOne(
+          { _id: user._id },
+          { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } }
+        );
         console.error("Password reset email failed:", mailError.message);
         return res.status(503).json({ success: false, message: "Unable to send the reset email right now. Please try again later." });
       }
@@ -148,10 +157,16 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ success: false, message: "This reset link is invalid or has expired. Request a new one." });
     }
 
-    user.password = await bcrypt.hash(password, 10);
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    await user.save();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Update only the reset-related fields so legacy records missing phone
+    // or other newer required fields can still complete password recovery.
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: { password: hashedPassword },
+        $unset: { passwordResetToken: 1, passwordResetExpires: 1 }
+      }
+    );
 
     return res.json({ success: true, message: "Password reset successful. You can now sign in with your new password." });
   } catch (error) {

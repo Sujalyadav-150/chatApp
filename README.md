@@ -1,185 +1,114 @@
-<<<<<<< HEAD
-# ChatApp - Mock Interview Practice
+# ChatApp - Real-Time Messaging
 
-This is a learning project based on the ChatApp requirements.
+ChatApp is a full-stack real-time messaging application built for personal and group conversations.
 
 ## Features
-- Signup with name, email, phone and password
-- Password hashing with bcrypt
-- Login using email or phone
-- JWT authentication
-- Express REST APIs
-- MongoDB/Mongoose
-- Socket.IO frontend/backend
-- Socket authentication
+
+- User signup and login with password hashing
+- JWT-based authentication for REST API and Socket.IO
 - Personal messaging with deterministic private rooms
-- Backend validation of the receiver email before chat starts
 - Group chat with member validation
-- Save messages to database and fetch history after refresh
-- Real-time text messages through Socket.IO rooms
-- AWS S3 image/video/file sharing
-- Automatic archiving of messages older than 24 hours
-- Retry-safe archive job with `ArchivedChat`
-- Render deployment blueprint for the web server and archive cron job
+- Persistent messages and chat history
+- Real-time text messages through Socket.IO
+- AWS S3 media/file sharing
+- Archive messages older than 24 hours
+- Optional AI typing suggestions and smart replies through OpenRouter
+- Responsive HTML, CSS and JavaScript frontend
 
-## AI chat suggestions (optional)
-When an OpenRouter API key is configured the chat adds two helpers:
-- **Typing suggestions** - 3 short continuations for the text you are typing.
-- **Smart replies** - 3 quick replies to the last incoming message.
+## Tech Stack
 
-Both are context aware (they read the latest room messages) and follow the
-selected **Tone** (casual / formal / playful). Without a key the app keeps
-working normally and simply shows no suggestions.
+- Frontend: HTML, CSS, JavaScript
+- Backend: Node.js, Express
+- Real-time communication: Socket.IO
+- Database: MongoDB with Mongoose
+- Authentication: bcryptjs and JSON Web Tokens
+- Media storage: AWS S3
+- Hosting: Vercel for the static frontend and Render for the persistent API/Socket.IO server
 
-The AI provider is [OpenRouter](https://openrouter.ai), which exposes an
-OpenAI-compatible API so we call it with plain `fetch` (no SDK dependency).
-Any model on OpenRouter can be used (OpenAI, Google, Meta, Anthropic, ...);
-if a model is unavailable the service transparently falls back to the next
-candidate model.
+## Project Structure
 
-### Enable it
-1. Create a free API key at https://openrouter.ai/keys
-2. Open `backend/.env` and set:
-   ```
-   OPENROUTER_API_KEY=your_key_here
-   # optional: OPENROUTER_MODEL=openai/gpt-4o-mini
-   ```
-3. Restart the backend (`npm start`) and reload `chat.html`.
+```text
+chatApp/
+├── backend/
+│   ├── config/
+│   ├── controllers/
+│   ├── jobs/
+│   ├── models/
+│   ├── routes/
+│   ├── socket/
+│   └── server.js
+├── frontend/
+│   ├── css/
+│   ├── js/
+│   ├── index.html
+│   ├── login.html
+│   ├── signup.html
+│   └── chat.html
+├── render.yaml
+├── aws-s3-cors.json
+└── DEPLOYMENT.md
+```
 
-### Rate limiting
-The AI endpoints are protected by a small in-memory limiter so fast typing
-cannot waste the OpenRouter quota:
-- the frontend debounces typing (600 ms), waits for a 1.5 s cooldown between
-  calls, ignores very short input and cancels stale requests;
-- the backend allows about 30 requests per user per minute with a small
-  minimum gap and answers `429` with a `Retry-After` header when exceeded.
+## Local Setup
 
-Tune it in `backend/.env` with `AI_RATE_WINDOW_MS`, `AI_RATE_MAX` and
-`AI_RATE_MIN_GAP_MS`.
+### 1. Requirements
 
-## Setup
+Install Node.js and have access to a MongoDB instance. Configure AWS S3 only if you want to test file uploads, and configure an OpenRouter API key only if you want to enable AI suggestions.
 
-### 1. Start MongoDB
-Use local MongoDB or MongoDB Atlas.
+### 2. Configure the backend
 
-### 2. Backend
-```bash
+```powershell
 cd backend
-copy .env.example .env
+Copy-Item .env.example .env
 npm install
 npm start
 ```
 
-On PowerShell, if `copy` behaves differently, simply create `.env` manually using `.env.example`.
-
-### 3. Open
-http://localhost:3000
-
-## Important interview functions
-- `io.on("connection")`
-- `socket.emit()`
-- `socket.on()`
-- `socket.join()`
-- `io.to(roomId).emit()`
-- `io.use()` for socket authentication
-- JWT verification
-- `createRoomId()`
-
-## Note
-This project is intentionally kept simple for hands-on interview practice, but the
-Sharpener assignment requirements are implemented end-to-end. Production hardening
-would still include stronger rate limiting, antivirus/file scanning, private S3
-objects behind signed URLs or CloudFront, audit logging, and more comprehensive
-automated tests.
-
-
-## Sharpener assignment status
-
-The current project includes the required Socket.IO personal messaging, backend
-user validation, deterministic private rooms, group chat, AWS S3 media sharing,
-and automatic chat archiving. The deployment configuration below is included so
-the same Node.js server can serve the frontend and keep Socket.IO connected.
-
-### Media sharing
-
-The backend uploads files to S3 and stores the resulting object URL in the
-message. Supported types include images, videos, PDF, common Office files,
-text and ZIP files. The default maximum upload size is 25 MB.
-
-Set these variables in `backend/.env`:
+Edit `backend/.env` and supply the required values, including:
 
 ```text
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
+MONGO_URI=<your MongoDB connection string>
+JWT_SECRET=<a long random secret>
+CLIENT_ORIGIN=http://localhost:3000
+AWS_ACCESS_KEY_ID=<your AWS access key, if using uploads>
+AWS_SECRET_ACCESS_KEY=<your AWS secret, if using uploads>
 AWS_REGION=ap-south-1
-AWS_S3_BUCKET=...
-MAX_UPLOAD_BYTES=26214400
+AWS_S3_BUCKET=<your S3 bucket name>
+OPENROUTER_API_KEY=<your key, optional>
 ```
 
-Never commit real AWS credentials. The repository already ignores `.env`.
+Use the exact variable names required by the backend configuration. Never commit real credentials or the `.env` file.
 
-For the assignment's S3 CORS requirement, apply `aws-s3-cors.json` to the
-bucket. Because the application uploads through the Node.js backend, the
-browser does not need direct S3 upload permission.
+### 3. Open the frontend
 
-The stored S3 URLs must be readable by the chat clients. For a simple student
-assignment deployment, configure an S3 bucket policy that permits `s3:GetObject`
-for the `chat-media/*` prefix. Keep `s3:PutObject` permission restricted to the
-IAM user used by the backend. For a production system, replace public object
-reads with CloudFront or signed GET URLs.
+When running the local backend, open the frontend at http://localhost:3000. The production API and Socket.IO host are configured in `frontend/js/config.js`.
 
-### Chat archiving
+## Deployment
 
-Messages older than 24 hours are archived into `ArchivedChat`. The local server
-runs the scheduler from `jobs/archiveMessages.js`. A standalone command is also
-available:
+Deployment guidance for Vercel, Render, MongoDB Atlas, and AWS S3 is available in [DEPLOYMENT.md](DEPLOYMENT.md). The frontend is hosted on Vercel; the persistent Express and Socket.IO server is hosted separately.
 
-```bash
-cd backend
-npm run archive
-```
-
-The archive operation is retry-safe: it upserts by the original message ID and
-only deletes from `Message` after the archive writes succeed.
-Messages are processed in configurable batches (`ARCHIVE_BATCH_SIZE`, default
-500) to keep memory use bounded. The Render cron runs daily at 02:00 UTC; each
-run drains all messages older than `ARCHIVE_AFTER_HOURS` before finishing.
-
-### Deleting messages
-
-From a message's menu, participants can delete it just for themselves. Only its
-sender can delete it for everyone. A message deleted for everyone is replaced
-with a notice ("You deleted this message" for its sender and "This message was
-deleted" for other participants). Per-user deletions are stored on the message
-and copied to the archive; the polling client also reconciles removed messages
-so deletes stay visible when Socket.IO is unavailable.
-
-### Deployment
-
-The included `render.yaml` is prepared for Render. It creates:
-
-1. A Node.js web service running Express + Socket.IO and serving `frontend/`.
-2. An hourly cron job that runs `npm run archive`.
-
-Before deploying, create a MongoDB Atlas database and an S3 bucket, then add the
-secret environment variables in Render. The health endpoint is:
+After deploying, verify the backend health endpoint:
 
 ```text
-/api/health
+https://chatapp.onrender.com/api/health
 ```
 
-After deployment, open the Render web-service URL. The frontend, REST APIs and
-Socket.IO all use the same origin, so no separate frontend hosting is required.
+## Security Notes
 
-### Git commands
+- Keep API keys, MongoDB credentials, JWT secrets, and AWS credentials out of Git.
+- Use a strong, unique JWT secret in production.
+- Keep AWS permissions limited to the required S3 bucket and object prefix.
+- Review uploads, access controls, validation, and rate limits before production use.
+- Do not ask users to enter credentials on a site they do not trust.
 
-```bash
-git add .
-git commit -m "feat: complete sharpener chat app requirements"
-git push origin main
-```
+## Troubleshooting
 
-Do not commit `backend/.env`, AWS keys, MongoDB passwords, or other secrets.
-=======
-# chatApp
->>>>>>> 15183da817716a4a2cae37401959883dd2135b60
+- Check backend hosting logs for API errors.
+- Verify MongoDB connection and required environment variables.
+- Ensure `CLIENT_ORIGIN` contains the deployed frontend origin.
+- Confirm the persistent backend and Socket.IO host are running.
+- If Chrome shows a “Dangerous site” interstitial, do not bypass the warning for normal visitors. Check Google Safe Browsing and Search Console, fix any reported problem, and request a review after the site is clean.
+
+## License
+
+Add a license file if you intend to distribute this project under an open-source license.
